@@ -10,13 +10,15 @@ type htmlTreeNode struct {
 	tag      string
 	content  string
 	children []*htmlTreeNode
+	parent   *htmlTreeNode
 }
 
-func newHTMLNode(tag, content string) *htmlTreeNode {
+func newHTMLNode(tag string, content string, parent *htmlTreeNode) *htmlTreeNode {
 	return &htmlTreeNode{
 		tag:      tag,
 		content:  content,
 		children: []*htmlTreeNode{},
+		parent:   parent,
 	}
 }
 
@@ -61,27 +63,25 @@ func (n *htmlTreeNode) addContent(content string) {
 	n.content = content
 }
 
-func stripFile(current *htmlTreeNode, htmlFile []string) {
+func stripFile(current *htmlTreeNode, htmlFile []string, index int) {
+	line := htmlFile[index]
+	if line == "</body>" {
+		return
+	}
+	if line[1] == '/' {
+		stripFile(current.parent, htmlFile, index+1)
+	}
+	if line[0] != '<' {
+		current.addContent(line)
+		stripFile(current, htmlFile, index+1)
 
-	for i := range htmlFile {
-		line := htmlFile[i]
-		// break if line is a closing tag
-		if line[1] == '/' {
-			return
-		}
-		//add content from line when first element isn't '<'
-		if line[0] != '<' {
-			current.addContent(line)
-		}
-		//check if condition for new child node is met and recursively call function with a shortened file
-		if line[0] == '<' && line[1] != '/' && line[1] != '!' {
-			tag := strings.ReplaceAll(line, "<", "")
-			tag = strings.ReplaceAll(tag, ">", "")
-			tempNode := newHTMLNode(tag, "")
-			current.addChild(tempNode)
-			htmlFile = htmlFile[i+1:]
-			stripFile(tempNode, htmlFile)
-		}
+	}
+	if line[0] == '<' && line[1] != '/' && line[1] != '!' {
+		tag := strings.ReplaceAll(line, "<", "")
+		tag = strings.ReplaceAll(tag, ">", "")
+		tempNode := newHTMLNode(tag, "", current)
+		current.addChild(tempNode)
+		stripFile(tempNode, htmlFile, index+1)
 	}
 }
 
@@ -98,10 +98,10 @@ func formatFile(htmlFile []string) []string {
 func main() {
 
 	tree := newHTMLTree()
-	root := newHTMLNode("html", "")
+	root := newHTMLNode("html", "", nil)
 	tree.setRoot(root)
-	head := newHTMLNode("head", "")
-	body := newHTMLNode("body", "")
+	head := newHTMLNode("head", "", root)
+	body := newHTMLNode("body", "", root)
 	root.addChild(head)
 	root.addChild(body)
 
@@ -110,7 +110,7 @@ func main() {
 	temp := strings.Split(string(content), "\r\n")
 	temp = formatFile(temp)
 	temp = temp[8:]
-	stripFile(body, temp)
+	stripFile(body, temp, 0)
 	//for _, s := range temp {
 	//	fmt.Println(s)
 	//}
