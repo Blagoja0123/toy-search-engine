@@ -1,8 +1,7 @@
-package main
+package internal
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -36,6 +35,18 @@ func newHTMLTree() *tree {
 
 func (t *tree) setRoot(node *htmlTreeNode) {
 	t.root = node
+}
+
+func tokenize(n *htmlTreeNode, depth int) []string {
+	var tokens []string
+	if len(n.children) == 0 {
+		return []string{""}
+	}
+	for _, child := range n.children {
+		tokens = append(tokens, child.content)
+		tokens = append(tokens, tokenize(child, depth+1)...)
+	}
+	return tokens
 }
 
 func printHTMLTree(node *htmlTreeNode, depth int) {
@@ -95,26 +106,20 @@ func formatFile(htmlFile []string) []string {
 	}
 	return res
 }
-func main() {
 
-	tree := newHTMLTree()
-	root := newHTMLNode("html", "", nil)
-	tree.setRoot(root)
-	head := newHTMLNode("head", "", root)
-	body := newHTMLNode("body", "", root)
-	root.addChild(head)
-	root.addChild(body)
+func mapTokens(t *tree) map[string]int {
+	mp := make(map[string]int)
 
-	content, err := os.ReadFile("./test.html")
-	check(err)
-	temp := strings.Split(string(content), "\r\n")
-	temp = formatFile(temp)
-	temp = temp[8:]
-	stripFile(body, temp, 0)
-	//for _, s := range temp {
-	//	fmt.Println(s)
-	//}
-
-	// Print the HTML tree
-	printHTMLTree(tree.root, 0)
+	tokens := tokenize(t.root, 0)
+	for _, line := range tokens {
+		token := strings.Fields(line)
+		for _, indToken := range token {
+			if _, ok := mp[indToken]; ok {
+				mp[indToken]++
+			} else {
+				mp[indToken] = 0
+			}
+		}
+	}
+	return mp
 }
