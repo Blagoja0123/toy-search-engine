@@ -4,7 +4,9 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"strings"
+	"sync"
 )
 
 type Result struct {
@@ -31,27 +33,47 @@ func initKWMap(keyWords []string) map[string]int {
 	return res
 }
 
-func Search(query string) []Result {
+func Search(query string, wg *sync.WaitGroup) []Result {
 	var Res []Result
-	//channelRes := make(chan Result, 20)
+	//wg := sync.WaitGroup{}
+	channelRes := make(chan Result)
 	keyWords := extractKeyWords(query)
-	files := loadFiles("./static")
-	htmlFiles := readFiles("./static", files)
+	dirs := getSubDirs("./static")
+
+	for _, dir := range dirs {
+		wg.Add(1)
+		go func(dir string) {
+			files := loadFiles(dir)
+			htmlFiles := readFiles(dir, files)
+			execSearch(htmlFiles, keyWords, files, channelRes)
+			wg.Done()
+		}(dir)
+	}
+	go func() {
+		wg.Wait()
+		close(channelRes)
+	}()
+	for res := range channelRes {
+		Res = append(Res, res)
+	}
+	return Res
+}
+
+func execSearch(htmlFiles []*tree, keyWords []string, files []string, channelRes chan Result) {
 	for i := 0; i < len(htmlFiles); i++ {
 		wordMap := initKWMap(keyWords)
 		tokens := tokenize(htmlFiles[i].root)
 		for _, token := range tokens {
-			if token == keyWords[0] || token == keyWords[1] {
+			if slices.Contains(keyWords, token) {
 				wordMap[token]++
 			}
 		}
-		Res = append(Res, Result{
+		channelRes <- Result{
 			NumKeyWords: wordMap,
 			Path:        files[i],
 			Accuracy:    calculateAcc(wordMap),
-		})
+		}
 	}
-	return Res
 }
 
 func calculateAcc(mp map[string]int) int {
@@ -60,6 +82,18 @@ func calculateAcc(mp map[string]int) int {
 		score += val * 10
 	}
 	return score
+}
+
+func getSubDirs(dir string) []string {
+	var res []string
+	subDirs, err := os.ReadDir(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, currDir := range subDirs {
+		res = append(res, dir+"/"+currDir.Name())
+	}
+	return res
 }
 
 func loadFiles(directory string) []string {
