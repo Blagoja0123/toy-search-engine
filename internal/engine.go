@@ -33,12 +33,13 @@ func initKWMap(keyWords []string) map[string]int {
 
 func Search(query string) []Result {
 	var Res []Result
+	//channelRes := make(chan Result, 20)
 	keyWords := extractKeyWords(query)
 	files := loadFiles("./static")
 	htmlFiles := readFiles("./static", files)
-	wordMap := initKWMap(keyWords)
 	for i := 0; i < len(htmlFiles); i++ {
-		tokens := tokenize(htmlFiles[i].root, 0)
+		wordMap := initKWMap(keyWords)
+		tokens := tokenize(htmlFiles[i].root)
 		for _, token := range tokens {
 			if token == keyWords[0] || token == keyWords[1] {
 				wordMap[token]++
@@ -93,10 +94,10 @@ func readFiles(directory string, fileList []string) []*tree {
 
 func initTree() (*tree, *htmlTreeNode) {
 	wTree := newHTMLTree()
-	root := newHTMLNode("html", "", nil)
+	root := newHTMLNode("html", []string{""}, nil)
 	wTree.setRoot(root)
-	head := newHTMLNode("head", "", root)
-	body := newHTMLNode("body", "", root)
+	head := newHTMLNode("head", []string{""}, root)
+	body := newHTMLNode("body", []string{""}, root)
 	root.addChild(head)
 	root.addChild(body)
 

@@ -7,12 +7,12 @@ import (
 
 type htmlTreeNode struct {
 	tag      string
-	content  string
+	content  []string
 	children []*htmlTreeNode
 	parent   *htmlTreeNode
 }
 
-func newHTMLNode(tag string, content string, parent *htmlTreeNode) *htmlTreeNode {
+func newHTMLNode(tag string, content []string, parent *htmlTreeNode) *htmlTreeNode {
 	return &htmlTreeNode{
 		tag:      tag,
 		content:  content,
@@ -37,14 +37,22 @@ func (t *tree) setRoot(node *htmlTreeNode) {
 	t.root = node
 }
 
-func tokenize(n *htmlTreeNode, depth int) []string {
+func tokenize(n *htmlTreeNode) []string {
 	var tokens []string
-	if len(n.children) == 0 {
-		return []string{""}
-	}
-	for _, child := range n.children {
-		tokens = append(tokens, child.content)
-		tokens = append(tokens, tokenize(child, depth+1)...)
+	//if len(n.children) == 0 {
+	//	return []string{""}
+	//}
+	if n != nil {
+
+		var fmtContent []string
+		for _, val := range n.content {
+			tmpVal := strings.Split(val, " ")
+			fmtContent = append(fmtContent, tmpVal...)
+		}
+		tokens = append(tokens, fmtContent...)
+		for _, child := range n.children {
+			tokens = append(tokens, tokenize(child)...)
+		}
 	}
 	return tokens
 }
@@ -71,7 +79,7 @@ func check(e error) {
 }
 
 func (n *htmlTreeNode) addContent(content string) {
-	n.content = content
+	n.content = append(n.content, content)
 }
 
 func stripFile(current *htmlTreeNode, htmlFile []string, index int) {
@@ -90,7 +98,7 @@ func stripFile(current *htmlTreeNode, htmlFile []string, index int) {
 	if line[0] == '<' && line[1] != '/' && line[1] != '!' {
 		tag := strings.ReplaceAll(line, "<", "")
 		tag = strings.ReplaceAll(tag, ">", "")
-		tempNode := newHTMLNode(tag, "", current)
+		tempNode := newHTMLNode(tag, []string{""}, current)
 		current.addChild(tempNode)
 		stripFile(tempNode, htmlFile, index+1)
 	}
@@ -110,7 +118,7 @@ func formatFile(htmlFile []string) []string {
 func mapTokens(t *tree) map[string]int {
 	mp := make(map[string]int)
 
-	tokens := tokenize(t.root, 0)
+	tokens := tokenize(t.root)
 	for _, line := range tokens {
 		token := strings.Fields(line)
 		for _, indToken := range token {
