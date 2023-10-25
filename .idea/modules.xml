@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/toyBrowser.iml" filepath="$PROJECT_DIR$/.idea/toyBrowser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../toySearchEngine/.idea/toySearchEngine.iml" filepath="$PROJECT_DIR$/../toySearchEngine/.idea/toySearchEngine.iml" />
     </modules>
   </component>
 </project>

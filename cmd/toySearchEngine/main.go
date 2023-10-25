@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
-	"toyBrowser/internal"
+	"toySearchEngine/internal"
 )
 
 func main() {
